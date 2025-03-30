@@ -1,0 +1,20 @@
+{
+    "name": "danish/nepal-nivas",
+    "description": "Stripe integration for payment processing",
+    "autoload": {
+        "psr-4": {
+            "Danish\\NepalNivas\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Danish khanal",
+            "email": "np03cs4s230134@heraldcollege.edu.np"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "stripe/stripe-php": "^16.5",
+        "phpmailer/phpmailer": "^6.9"
+    }
+}
