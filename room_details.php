@@ -4,44 +4,35 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <?php require('inc/links.php'); ?> <!-- Include external CSS/JS links -->
+    <?php require('inc/links.php'); ?>
+    <!-- Add Pannellum CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css">
     <title><?php echo $settings_r['site_title'] ?> - ROOM DETAILS</title>
 </head>
 <body class="bg-light">
-    <?php require('inc/header.php'); ?> <!-- Include header -->
+    <?php require('inc/header.php'); ?>
 
     <?php
-        // Check if room ID is provided in the URL, if not, redirect to rooms page
         if(!isset($_GET['id'])){
             redirect('rooms.php');
         }
 
-        // Sanitize input to prevent SQL injection
         $data = filteration($_GET);
-
-        // Query to fetch room details based on the provided room ID
         $room_res = select("SELECT * FROM `rooms` WHERE `id`=? AND `status`=? AND `removed`=?",[$data['id'],1,0],'iii');
 
-        // If no room is found, redirect to rooms page
         if(mysqli_num_rows($room_res)==0){
             redirect('rooms.php');
         }
 
-        // Fetch room data from the query result
         $room_data = mysqli_fetch_assoc($room_res);
-
-        // Get the selected currency from URL, default to 'NPR' if not provided
         $selected_currency = isset($_GET['currency']) ? $_GET['currency'] : 'NPR';
-
-        // Fetch exchange rates and convert price
         $exchange_rates = getExchangeRates();
-        $base_currency = 'NPR'; // Assuming NPR is the base currency
+        $base_currency = 'NPR';
         $converted_price = convertCurrency($room_data['price'], $base_currency, $selected_currency, $exchange_rates);
     ?>
 
     <div class="container">
         <div class="row">
-            <!-- Room details header -->
             <div class="col-12 my-5 mb-4 px-4">
                 <h2 class="fw-bold"><?php echo $room_data['name'] ?></h2>
                 <div style="font-size: 14px;">
@@ -51,15 +42,12 @@
                 </div>
             </div>
 
-            <!-- Room Image Carousel -->
             <div class="col-lg-7 col-md-12 px-4">
                 <div id="roomCarousel" class="carousel slide" data-bs-ride="carousel">
                     <div class="carousel-inner">
                         <?php
-                            $room_img = ROOMS_IMG_PATH."thumbnail.jpg"; // Default image
+                            $room_img = ROOMS_IMG_PATH."thumbnail.jpg";
                             $img_q = mysqli_query($con,"SELECT * FROM `room_images` WHERE `room_id`='$room_data[id]'");
-
-                            // If room has images, display them
                             if(mysqli_num_rows($img_q)>0) {
                                 $active_class = 'active';
                                 while($img_res = mysqli_fetch_assoc($img_q)) {
@@ -69,7 +57,6 @@
                                     $active_class = '';
                                 }
                             } else {
-                                // If no images, display the default image
                                 echo "<div class='carousel-item active'>
                                         <img src='$room_img' class='d-block w-100'>
                                       </div>";
@@ -87,21 +74,16 @@
                 </div>
             </div>
 
-            <!-- Room Details & Booking -->
             <div class="col-lg-5 col-md-12 px-4">
                 <div class="card mb-4 border-0 shadow-sm rounded-3">
                     <div class="card-body">
-                        <!-- Display converted price -->
                         <?php echo "<h4>$selected_currency $converted_price per night</h4>"; ?>
 
-                        <!-- Room Rating -->
                         <?php
                             $rating_q = "SELECT AVG(rating) AS `avg_rating` FROM `rating_review` WHERE `room_id`='$room_data[id]' ORDER BY `sr_no` DESC LIMIT 20";
                             $rating_res = mysqli_query($con,$rating_q);
                             $rating_fetch = mysqli_fetch_assoc($rating_res);
                             $rating_data = "";
-
-                            // Display stars based on average rating
                             if($rating_fetch['avg_rating']!=NULL) {
                                 for($i=0; $i < $rating_fetch['avg_rating']; $i++) {
                                     $rating_data .= "<i class='bi bi-star-fill text-warning'></i> ";
@@ -110,7 +92,6 @@
                             echo "<div class='mb-3'>$rating_data</div>";
                         ?>
 
-                        <!-- Room Features -->
                         <?php
                             $fea_q = mysqli_query($con,"SELECT f.name FROM `features` f
                                                       INNER JOIN `room_features` rfea ON f.id = rfea.features_id
@@ -124,21 +105,19 @@
                             echo "<div class='mb-3'><h6 class='mb-1'>Features</h6>$features_data</div>";
                         ?>
 
-                        <!-- Room Facilities -->
                         <?php
-                            $fac_q = mysqli_query($con,"SELECT f.name FROM `facilities` f
-                                                       INNER JOIN `room_facilities` rfac ON f.id = rfac.facilities_id
-                                                       WHERE rfac.room_id = '$room_data[id]'");
+                            $fac_q = mysqli_query($con, "SELECT f.name FROM `facilities` f
+                                                        INNER JOIN `room_facilities` rfac ON f.id = rfac.facilities_id
+                                                        WHERE rfac.room_id = '$room_data[id]'");
                             $facilities_data = "";
                             while($fac_row = mysqli_fetch_assoc($fac_q)) {
                                 $facilities_data .= "<span class='badge rounded-pill bg-light text-dark text-wrap me-1 mb-1'>
-                                                      $fac_row[name]
-                                                    </span>";
+                                                    $fac_row[name]
+                                                  </span>";
                             }
                             echo "<div class='mb-3'><h6 class='mb-1'>Facilities</h6>$facilities_data</div>";
                         ?>
 
-                        <!-- Room Occupancy (Adults and Children) -->
                         <?php
                             echo "<div class='mb-3'>
                                     <h6 class='mb-1'>Guests</h6>
@@ -147,7 +126,6 @@
                                   </div>";
                         ?>
 
-                        <!-- Room Area -->
                         <?php
                             echo "<div class='mb-3'>
                                     <h6 class='mb-1'>Area</h6>
@@ -155,7 +133,11 @@
                                   </div>";
                         ?>
 
-                        <!-- Booking Button -->
+                        <!-- Add 360° Images Button -->
+                        <button type="button" class="btn btn-outline-success w-100 mb-2" data-bs-toggle="modal" data-bs-target="#room360Modal">
+                            <i class="bi bi-arrow-repeat"></i> View 360° Images
+                        </button>
+
                         <?php
                             if(!$settings_r['shutdown']) {
                                 $login = isset($_SESSION['login']) && $_SESSION['login'] == true ? 1 : 0;
@@ -166,7 +148,6 @@
                 </div>
             </div>
 
-            <!-- Room Description and Reviews -->
             <div class="col-12 mt-4 px-4">
                 <div class="mb-5">
                     <h5>Description</h5>
@@ -176,10 +157,10 @@
                     <h5 class="mb-3">Reviews & Ratings</h5>
                     <?php
                         $review_q = "SELECT rr.*, uc.name AS uname, uc.profile, r.name AS rname FROM `rating_review` rr
-                                     INNER JOIN `user_cred` uc ON rr.user_id = uc.id
-                                     INNER JOIN `rooms` r ON rr.room_id = r.id
-                                     WHERE rr.room_id = '$room_data[id]'
-                                     ORDER BY `sr_no` DESC LIMIT 15";
+                                    INNER JOIN `user_cred` uc ON rr.user_id = uc.id
+                                    INNER JOIN `rooms` r ON rr.room_id = r.id
+                                    WHERE rr.room_id = '$room_data[id]'
+                                    ORDER BY `sr_no` DESC LIMIT 15";
                         $review_res = mysqli_query($con,$review_q);
                         $img_path = USERS_IMG_PATH;
 
@@ -207,18 +188,104 @@
         </div>
     </div>
 
-    <?php require('inc/footer.php'); ?> <!-- Include footer -->
+    <!-- 360° Images Modal with Pannellum -->
+<div class="modal fade" id="room360Modal" tabindex="-1" aria-labelledby="room360ModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="room360ModalLabel">360° Images for <?php echo $room_data['name']; ?></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="panorama" style="width: 100%; height: 400px;"></div>
+                <?php
+                    $query_360 = "SELECT * FROM `room_360_images` WHERE `room_id`=?";
+                    $res_360 = select($query_360, [$room_data['id']], 'i');
+                    if (mysqli_num_rows($res_360) > 0) {
+                        $row_360 = mysqli_fetch_assoc($res_360);
+                        // Use a relative path
+                        $img_path_360 = '/NepalNivas/images/360/' . $row_360['image'];
+                        echo "<script>var panoramaImage = '$img_path_360';</script>";
+                    } else {
+                        echo '<p>No 360° images available for this room.</p>';
+                        echo "<script>var panoramaImage = null;</script>";
+                    }
+                ?>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('room360Modal').addEventListener('shown.bs.modal', function () {
+        setTimeout(function() {
+            if (panoramaImage) {
+                console.log('Loading 360 image: ' + panoramaImage);
+                pannellum.viewer('panorama', {
+                    "type": "equirectangular",
+                    "panorama": panoramaImage,
+                    "autoLoad": true,
+                    "autoRotate": -2,
+                    "compass": true,
+                    "error": function(error) {
+                        console.error('Pannellum Error: ' + error);
+                    }
+                });
+            } else {
+                console.log('No 360 image available');
+            }
+        }, 100);
+    });
+
+    document.getElementById('room360Modal').addEventListener('hidden.bs.modal', function () {
+        var panoramaDiv = document.getElementById('panorama');
+        panoramaDiv.innerHTML = '';
+    });
+</script>
+
+    <?php require('inc/footer.php'); ?>
+
+    <!-- Add Pannellum JS -->
+    <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+    <!-- Bootstrap JS (assumed to be included in inc/links.php or inc/footer.php) -->
+    <script>
+        // Initialize Pannellum when the modal is fully shown
+        document.getElementById('room360Modal').addEventListener('shown.bs.modal', function () {
+            if (panoramaImage) {
+                console.log('Loading 360 image: ' + panoramaImage); // Debug log
+                pannellum.viewer('panorama', {
+                    "type": "equirectangular",
+                    "panorama": panoramaImage,
+                    "autoLoad": true,
+                    "autoRotate": -2,
+                    "compass": true,
+                    "error": function(error) {
+                        console.error('Pannellum Error: ' + error); // Log any Pannellum errors
+                    }
+                });
+            } else {
+                console.log('No 360 image available');
+            }
+        });
+
+        // Clear the panorama when the modal is hidden to prevent overlap
+        document.getElementById('room360Modal').addEventListener('hidden.bs.modal', function () {
+            var panoramaDiv = document.getElementById('panorama');
+            panoramaDiv.innerHTML = ''; // Clear the previous panorama
+        });
+    </script>
 
     <?php
-        // Exchange rate fetching function
         function getExchangeRates() {
-            $api_key = '76f54876e1914127b401c01cb75c2af9'; // Replace with your actual API key
+            $api_key = ''; // Add your API key here
             $url = "https://openexchangerates.org/api/latest.json?app_id=$api_key";
             $response = file_get_contents($url);
             return json_decode($response, true)['rates'];
         }
 
-        // Currency conversion function
         function convertCurrency($amount, $from_currency, $to_currency, $exchange_rates) {
             if ($from_currency == $to_currency) {
                 return number_format($amount, 2);
@@ -227,7 +294,7 @@
                 $conversion_rate = $exchange_rates[$to_currency] / $exchange_rates[$from_currency];
                 return number_format($amount * $conversion_rate, 2);
             }
-            return number_format($amount, 2); // Return original amount if conversion fails
+            return number_format($amount, 2);
         }
     ?>
 </body>
